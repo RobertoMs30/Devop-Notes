@@ -21,14 +21,14 @@ Preferred communication style: Simple, everyday language.
 - **Server**: Express.js with TypeScript
 - **Database ORM**: Drizzle ORM for type-safe database operations
 - **API Design**: RESTful API with structured error handling
-- **Storage**: Dual storage approach - in-memory storage for development and PostgreSQL for production
+- **Storage**: PostgreSQL database with Drizzle ORM for persistent data storage
 - **Validation**: Zod schemas for request/response validation
 
 ## Data Storage Solutions
-- **Development**: In-memory storage using Maps for rapid prototyping
-- **Production**: PostgreSQL database with Drizzle ORM
-- **Client-side**: localStorage for offline capabilities and improved UX
-- **Schema**: Shared TypeScript schemas between frontend and backend
+- **Primary Database**: PostgreSQL database with Drizzle ORM for all persistent data
+- **Client-side**: localStorage integration for offline capabilities and improved UX
+- **Schema**: Shared TypeScript schemas between frontend and backend with Zod validation
+- **Migration**: Automatic schema synchronization with `npm run db:push`
 
 ## Authentication and Authorization
 - Basic user schema implemented but not actively used in current note management flow

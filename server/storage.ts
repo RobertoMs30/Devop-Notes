@@ -1,5 +1,6 @@
-import { type User, type InsertUser, type Note, type InsertNote, type UpdateNote } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { type User, type InsertUser, type Note, type InsertNote, type UpdateNote, notes, users } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -14,78 +15,66 @@ export interface IStorage {
   deleteNote(id: string): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private notes: Map<string, Note>;
-
-  constructor() {
-    this.users = new Map();
-    this.notes = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async getAllNotes(): Promise<Note[]> {
-    return Array.from(this.notes.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db.select().from(notes).orderBy(desc(notes.createdAt));
   }
 
   async getNote(id: string): Promise<Note | undefined> {
-    return this.notes.get(id);
+    const [note] = await db.select().from(notes).where(eq(notes.id, id));
+    return note || undefined;
   }
 
   async createNote(insertNote: InsertNote): Promise<Note> {
-    const id = randomUUID();
-    const now = new Date();
-    const note: Note = {
-      ...insertNote,
-      id,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.notes.set(id, note);
+    const [note] = await db
+      .insert(notes)
+      .values(insertNote)
+      .returning();
     return note;
   }
 
   async updateNote(updateNote: UpdateNote): Promise<Note> {
-    const existingNote = this.notes.get(updateNote.id);
-    if (!existingNote) {
+    const [note] = await db
+      .update(notes)
+      .set({
+        title: updateNote.title,
+        content: updateNote.content,
+        updatedAt: new Date(),
+      })
+      .where(eq(notes.id, updateNote.id))
+      .returning();
+    
+    if (!note) {
       throw new Error("Note not found");
     }
     
-    const updatedNote: Note = {
-      ...existingNote,
-      title: updateNote.title,
-      content: updateNote.content,
-      updatedAt: new Date(),
-    };
-    
-    this.notes.set(updateNote.id, updatedNote);
-    return updatedNote;
+    return note;
   }
 
   async deleteNote(id: string): Promise<void> {
-    if (!this.notes.has(id)) {
+    const result = await db.delete(notes).where(eq(notes.id, id));
+    if (result.rowCount === 0) {
       throw new Error("Note not found");
     }
-    this.notes.delete(id);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
