@@ -1,0 +1,139 @@
+
+{
+  "dashboard": {
+    "id": null,
+    "title": "Notes App Monitoring",
+    "tags": ["notes", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Event Activity Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "format": "time_series",
+            "group": [],
+            "metricColumn": "none",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  date_trunc('hour', event_time) as time,\n  count(*) as value\nFROM event_logs\nWHERE $__timeFilter(event_time)\nGROUP BY 1\nORDER BY 1",
+            "refId": "A",
+            "select": [
+              [
+                {
+                  "params": ["value"],
+                  "type": "column"
+                }
+              ]
+            ],
+            "timeColumn": "time",
+            "where": [
+              {
+                "name": "$__timeFilter",
+                "params": [],
+                "type": "macro"
+              }
+            ]
+          }
+        ],
+        "xAxis": {
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yAxes": [
+          {
+            "label": "Events",
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Events by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "format": "table",
+            "group": [],
+            "metricColumn": "none",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  event_type as metric,\n  count(*) as value\nFROM event_logs\nWHERE $__timeFilter(event_time)\nGROUP BY event_type\nORDER BY value DESC",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Recent Events",
+        "type": "table",
+        "targets": [
+          {
+            "format": "table",
+            "group": [],
+            "metricColumn": "none",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  event_time,\n  event_type,\n  event_message,\n  ip_address\nFROM event_logs\nWHERE $__timeFilter(event_time)\nORDER BY event_time DESC\nLIMIT 100",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "format": "table",
+            "group": [],
+            "metricColumn": "none",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  ROUND(\n    (COUNT(CASE WHEN event_type = 'ERROR' THEN 1 END)::float / COUNT(*)::float) * 100,\n    2\n  ) as value\nFROM event_logs\nWHERE $__timeFilter(event_time)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 5
+                },
+                {
+                  "color": "red",
+                  "value": 10
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 0,
+    "links": []
+  }
+}
