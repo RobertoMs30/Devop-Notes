@@ -68,4 +68,4 @@ export const insertEventLogSchema = createInsertSchema(eventLogs).pick({
 });
 
 export type InsertEventLog = z.infer<typeof insertEventLogSchema>;
-export type EventLog = typeof eventLogs.$inferSelect;ect;
+export type EventLog = typeof eventLogs.$inferSelect;
