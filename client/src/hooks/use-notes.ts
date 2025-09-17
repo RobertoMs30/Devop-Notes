@@ -1,58 +1,96 @@
+
 import { useState, useEffect } from "react";
 import { Note, InsertNote, UpdateNote } from "@shared/schema";
-import { localStorageService } from "@/lib/localStorage";
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
 
-  // Load notes from localStorage on mount
+  // Load notes from API on mount
   useEffect(() => {
-    const savedNotes = localStorageService.getNotes();
-    setNotes(savedNotes);
-    setFilteredNotes(savedNotes);
+    fetchNotes();
   }, []);
 
   // Update filtered notes when search query changes
   useEffect(() => {
     if (searchQuery.trim()) {
-      const filtered = localStorageService.searchNotes(searchQuery);
+      const filtered = notes.filter(note =>
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
       setFilteredNotes(filtered);
     } else {
       setFilteredNotes(notes);
     }
   }, [searchQuery, notes]);
 
-  const createNote = (noteData: InsertNote) => {
-    const newNote: Note = {
-      ...noteData,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    localStorageService.addNote(newNote);
-    setNotes(prev => [newNote, ...prev]);
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch('/api/notes');
+      if (response.ok) {
+        const fetchedNotes = await response.json();
+        setNotes(fetchedNotes);
+        setFilteredNotes(fetchedNotes);
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
   };
 
-  const updateNote = (noteData: UpdateNote) => {
-    const updatedNote: Note = {
-      ...notes.find(n => n.id === noteData.id)!,
-      ...noteData,
-      updatedAt: new Date(),
-    };
+  const createNote = async (noteData: InsertNote) => {
+    try {
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(noteData),
+      });
 
-    localStorageService.updateNote(updatedNote);
-    setNotes(prev => prev.map(note => 
-      note.id === noteData.id ? updatedNote : note
-    ));
+      if (response.ok) {
+        const newNote = await response.json();
+        setNotes(prev => [newNote, ...prev]);
+      }
+    } catch (error) {
+      console.error('Error creating note:', error);
+    }
   };
 
-  const deleteNote = (noteId: string) => {
+  const updateNote = async (noteData: UpdateNote) => {
+    try {
+      const response = await fetch(`/api/notes/${noteData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(noteData),
+      });
+
+      if (response.ok) {
+        const updatedNote = await response.json();
+        setNotes(prev => prev.map(note => 
+          note.id === noteData.id ? updatedNote : note
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating note:', error);
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-      localStorageService.deleteNote(noteId);
-      setNotes(prev => prev.filter(note => note.id !== noteId));
+      try {
+        const response = await fetch(`/api/notes/${noteId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setNotes(prev => prev.filter(note => note.id !== noteId));
+        }
+      } catch (error) {
+        console.error('Error deleting note:', error);
+      }
     }
   };
 
