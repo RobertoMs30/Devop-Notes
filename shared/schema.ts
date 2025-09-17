@@ -7,6 +7,7 @@ export const notes = pgTable("notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  tags: text("tags").array().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -14,13 +15,22 @@ export const notes = pgTable("notes", {
 export const insertNoteSchema = createInsertSchema(notes).pick({
   title: true,
   content: true,
+  tags: true,
+}).extend({
+  title: z.string().min(1, "El título no puede estar vacío"),
+  content: z.string().min(10, "El contenido debe tener al menos 10 caracteres"),
+  tags: z.array(z.string()).default([]),
 });
 
 export const updateNoteSchema = createInsertSchema(notes).pick({
   title: true,
   content: true,
+  tags: true,
 }).extend({
   id: z.string(),
+  title: z.string().min(1, "El título no puede estar vacío"),
+  content: z.string().min(10, "El contenido debe tener al menos 10 caracteres"),
+  tags: z.array(z.string()).default([]),
 });
 
 export type InsertNote = z.infer<typeof insertNoteSchema>;

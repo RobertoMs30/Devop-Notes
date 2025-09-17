@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Calendar, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Calendar, FileText, Tag } from "lucide-react";
 import { Note } from "@shared/schema";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -70,6 +71,18 @@ export function NoteList({ notes, onEdit, onDelete }: NoteListProps) {
               <p className="text-muted-foreground text-sm mb-2" data-testid={`note-content-${note.id}`}>
                 {truncateContent(note.content)}
               </p>
+              
+              {note.tags && note.tags.length > 0 && (
+                <div className="flex items-center gap-1 mb-2 flex-wrap">
+                  <Tag className="h-3 w-3 text-muted-foreground" />
+                  {note.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
               <div className="flex items-center text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3 mr-1" />
                 <span data-testid={`note-date-${note.id}`}>

@@ -16,35 +16,66 @@ interface NoteFormProps {
 export function NoteForm({ onSubmit, editingNote, onCancelEdit }: NoteFormProps) {
   const [title, setTitle] = useState(editingNote?.title || "");
   const [content, setContent] = useState(editingNote?.content || "");
+  const [tagsInput, setTagsInput] = useState(
+    editingNote?.tags?.join(", ") || ""
+  );
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     
-    if (!title.trim() || !content.trim()) return;
+    // Procesar etiquetas: normalizar y eliminar duplicados
+    const processedTags = tagsInput
+      .split(",")
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+      .filter((tag, index, arr) => arr.indexOf(tag) === index); // eliminar duplicados
+
+    const noteData = {
+      title: title.trim(),
+      content: content.trim(),
+      tags: processedTags,
+    };
+
+    // Validación manual antes de enviar
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!noteData.title) {
+      newErrors.title = "El título no puede estar vacío";
+    }
+    
+    if (noteData.content.length < 10) {
+      newErrors.content = "El contenido debe tener al menos 10 caracteres";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     if (editingNote) {
       onSubmit({
         id: editingNote.id,
-        title: title.trim(),
-        content: content.trim(),
+        ...noteData,
       });
     } else {
-      onSubmit({
-        title: title.trim(),
-        content: content.trim(),
-      });
+      onSubmit(noteData);
     }
 
     // Reset form if creating new note
     if (!editingNote) {
       setTitle("");
       setContent("");
+      setTagsInput("");
     }
   };
 
   const handleCancel = () => {
     setTitle("");
     setContent("");
+    setTagsInput("");
+    setErrors({});
     onCancelEdit?.();
   };
 
@@ -62,12 +93,15 @@ export function NoteForm({ onSubmit, editingNote, onCancelEdit }: NoteFormProps)
               placeholder="Ingresa el título de tu nota..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              required
+              className={errors.title ? "border-destructive" : ""}
               data-testid="input-title"
             />
+            {errors.title && (
+              <p className="text-destructive text-sm mt-1">{errors.title}</p>
+            )}
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <Label htmlFor="noteContent" className="block text-sm font-medium text-foreground mb-2">
               Contenido
             </Label>
@@ -77,10 +111,32 @@ export function NoteForm({ onSubmit, editingNote, onCancelEdit }: NoteFormProps)
               placeholder="Escribe el contenido de tu nota..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              required
-              className="resize-vertical"
+              className={`resize-vertical ${errors.content ? "border-destructive" : ""}`}
               data-testid="input-content"
             />
+            {errors.content && (
+              <p className="text-destructive text-sm mt-1">{errors.content}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {content.length}/10 caracteres mínimos
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <Label htmlFor="noteTags" className="block text-sm font-medium text-foreground mb-2">
+              Etiquetas
+            </Label>
+            <Input
+              type="text"
+              id="noteTags"
+              placeholder="DevOps, CI/CD, Examen (separadas por comas)"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              data-testid="input-tags"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Separa las etiquetas con comas. Los duplicados se eliminarán automáticamente.
+            </p>
           </div>
           
           <div className="flex gap-2">

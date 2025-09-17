@@ -51,9 +51,15 @@ export function useNotes() {
       if (response.ok) {
         const newNote = await response.json();
         setNotes(prev => [newNote, ...prev]);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        console.error('Error creating note:', errorData);
+        return { success: false, error: errorData.message };
       }
     } catch (error) {
       console.error('Error creating note:', error);
+      return { success: false, error: 'Error de conexión' };
     }
   };
 
@@ -72,9 +78,15 @@ export function useNotes() {
         setNotes(prev => prev.map(note => 
           note.id === noteData.id ? updatedNote : note
         ));
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        console.error('Error updating note:', errorData);
+        return { success: false, error: errorData.message };
       }
     } catch (error) {
       console.error('Error updating note:', error);
+      return { success: false, error: 'Error de conexión' };
     }
   };
 
