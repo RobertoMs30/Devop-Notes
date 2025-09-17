@@ -50,3 +50,22 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const eventLogs = pgTable("event_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  eventMessage: text("event_message").notNull(),
+  eventTime: timestamp("event_time").notNull().defaultNow(),
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+});
+
+export const insertEventLogSchema = createInsertSchema(eventLogs).pick({
+  eventType: true,
+  eventMessage: true,
+  userAgent: true,
+  ipAddress: true,
+});
+
+export type InsertEventLog = z.infer<typeof insertEventLogSchema>;
+export type EventLog = typeof eventLogs.$inferSelect;ect;
